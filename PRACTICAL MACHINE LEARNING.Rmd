@@ -1,0 +1,87 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Assane Gueye"
+date: "April 5, 2016"
+output: html_document
+---
+
+### Summary
+Our goal in this project is to use accelerometers data from measurement devices such as Jawbone Up, Nike FuelBand, and Fitbit to quantify and predict how well the participants are perform the weight lifts exercise. The performance are already categorize into 5 different classes (A to E). Class A corresponds to a right way of doing the exercise, and the remaining classes identify common mistakes in this weight lifting exercise.
+  
+
+### Getting and cleaning the data
+I will begin by importing the data, doing some pre-filtering and cleaning, and generating two subsets of the data: The training set, which will be use to train the model, and the evaluation set, which will use to evaluate the model performance.
+
+```{r}
+train_data_link <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_data_link  <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+df_training <- read.csv(url(train_data_link), na.strings = c("NA","#DIV/0!",""))
+df_testing  <- read.csv(url(test_data_link),  na.strings = c("NA","#DIV/0!",""))
+
+near_NA     <-apply(!is.na(df_training),2,sum)>19000
+df_training <-df_training[,near_NA]
+df_testing  <-df_testing[,near_NA]
+```
+
+Remove column 1 to 7 as they are not relevant for this analysis
+
+```{r}
+df_training <- df_training[, -(1:7)]
+df_testing  <- df_testing[, -(1:7)]
+
+```
+
+### Data processing: Model building
+In this section we will partitioning the training set into a training and test set; set the seed to ensure reproducibility and use random forest as our prediction.
+
+```{r}
+library(caret)
+set.seed(900)
+
+inTrain  <- createDataPartition(y=df_training$classe, p=0.70, list=FALSE)
+training <- df_training[inTrain,]
+testing  <- df_training[-inTrain,]
+
+```
+
+#### 1. Training
+In this section I will use the random forest model to train and predict the test set.
+
+```{r}
+fitControl <- trainControl(method="oob", number=5, verboseIter=F)
+rf_model <- train(classe ~ ., data=training, method="rf", trControl=fitControl)
+print(rf_model$finalModel)
+
+```
+
+
+Now that I confirm that our model is generating very accurate result, I will use it with my test set to validate the performance.
+```{r}
+rf_fit <- predict(rf_model, testing)
+confusionMatrix(rf_fit, testing$classe)
+```
+This is an excellent model; the accuracy is 99.3% and the out-of-sample error is less than 0.6%. Hence, I will be using this model to answer the project questions.
+
+### 2. Conclusion
+The following shows the perdition of the test data, which is exactly the expected result. 
+```{r}
+rf_fitResult <- predict(rf_model, df_testing)
+rf_fitResult
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
